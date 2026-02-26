@@ -1,0 +1,13 @@
+excel-rule.md
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.streamlit/
+*.xlsx
+*.xlsm
+*.xls
+debug_excel.py
+check_data.py
+check_peds.py
+audit_peds.py
