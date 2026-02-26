@@ -9,13 +9,25 @@ st.title("🏥 醫療帳務資料合併工具")
 st.markdown("請將 Excel 檔案拖至下方框中，系統將自動核對並保留原始格式。")
 
 # --- 檔案上傳區 ---
-col1, col2 = st.columns(2)
-with col1:
-    template_file = st.file_uploader("1. 拖入主模板 (115年度明細表新.xlsx)", type=["xlsx", "xlsm"])
-with col2:
-    day_file = st.file_uploader("2. 拖入每日來源資料 (day.xlsx)", type=["xlsx", "xlsm"])
+uploaded_files = st.file_uploader("請同時選擇或拖入「主模板」與「每日來源資料」兩個檔案", type=["xlsx", "xlsm"], accept_multiple_files=True)
+
+template_file = None
+day_file = None
+
+if uploaded_files:
+    for f in uploaded_files:
+        try:
+            xls = pd.ExcelFile(f)
+            sheet_names = xls.sheet_names
+            if "代號表" in sheet_names or "工作表1" in sheet_names:
+                day_file = f
+            elif any(s.startswith("115") for s in sheet_names):
+                template_file = f
+        except Exception:
+            continue
 
 if template_file and day_file:
+    st.info(f"📁 已偵測到：\n- 主模板：{template_file.name}\n- 來源資料：{day_file.name}")
     if st.button("🚀 開始執行並產生報表", type="primary"):
         try:
             # 1. 讀取代號表
