@@ -20,6 +20,9 @@ if 'target_date_str' not in st.session_state:
     st.session_state.target_date_str = None
 if 'data_pool' not in st.session_state:
     st.session_state.data_pool = {}
+for key in ['audit_sheet1', 'audit_sheet2', 'audit_sheet3', 'audit_sheet45']:
+    if getattr(st.session_state, key, None) is None:
+        st.session_state[key] = []
 
 # --- 檔案上傳區 ---
 uploaded_files = st.file_uploader("請同時選擇或拖入「115年度明細表」與「每日來源資料」兩個檔案", type=["xlsx", "xlsm"], accept_multiple_files=True)
@@ -64,6 +67,10 @@ if template_file and day_file:
                 st.session_state.data_pool = {}
                 st.session_state.detailed_records = []
                 st.session_state.target_date_str = None
+                st.session_state.audit_sheet1 = []
+                st.session_state.audit_sheet2 = []
+                st.session_state.audit_sheet3 = []
+                st.session_state.audit_sheet45 = []
                 
                 def collect_data(date_obj, col, val, reason, name):
                     if val == 0: return
@@ -100,6 +107,16 @@ if template_file and day_file:
                         c = str(row.iloc[1]).strip().split('.')[0].zfill(2)
                         name = code_dict.get(c)
                         val = safe_num(row.iloc[16]) - safe_num(row.iloc[4]) - safe_num(row.iloc[5])
+                        
+                        st.session_state.audit_sheet1.append({
+                            "日期": dt.strftime('%Y-%m-%d'),
+                            "對象": name if name else "未知",
+                            "小計": safe_num(row.iloc[16]),
+                            "掛號": safe_num(row.iloc[4]),
+                            "部分負擔": safe_num(row.iloc[5]),
+                            "門診金額": val
+                        })
+                        
                         if name == '兒科': collect_data(dt, 70, val, "兒科", "兒科")
                         elif name in opd_no_stu: collect_data(dt, opd_no_stu[name], val, "門診", name)
                         elif name in opd_stu:
@@ -123,18 +140,35 @@ if template_file and day_file:
                             collect_data(dt, room_map[name], iRoom, "病房費", name)
                             collect_data(dt, room_map[name]+10, iMat, "材料費", name)
                             collect_data(dt, room_map[name]+20, iFood, "伙食費", name)
+                            st.session_state.audit_sheet2.append({
+                                "日期": dt.strftime('%Y-%m-%d'), "對象": name, "項目": "一般出院",
+                                "明細": f"病房:{iRoom}, 材料:{iMat}, 伙食:{iFood}", "金額": iRoom + iMat + iFood
+                            })
                         
                         if iPre >= 0:
                             birth_total = iAnes + iBirth + iPre
                             if birth_total != 0 and name in birth_map:
                                 collect_data(dt, birth_map[name], birth_total, "生產實收(麻+產+預)", name)
+                                st.session_state.audit_sheet2.append({
+                                    "日期": dt.strftime('%Y-%m-%d'), "對象": name, "項目": "生產實收",
+                                    "明細": f"麻醉:{iAnes}, 產費:{iBirth}, 預收:{iPre}", "金額": birth_total
+                                })
                         else:
                             hp_val = abs(iPre) - iAnes - iBirth
                             d_str = dt.strftime('%Y-%m-%d')
                             hp_agg[d_str] = hp_agg.get(d_str, 0.0) + hp_val
+                            st.session_state.audit_sheet2.append({
+                                "日期": d_str, "對象": name, "項目": "HP結算(單筆)",
+                                "明細": f"Abs(預收:{iPre}) - 麻醉:{iAnes} - 產費:{iBirth}", "金額": hp_val
+                            })
                     
                     for d_str, total in hp_agg.items():
-                        if total != 0: collect_data(datetime.strptime(d_str, '%Y-%m-%d'), 224, total, "HP結算", "總計")
+                        if total != 0: 
+                            collect_data(datetime.strptime(d_str, '%Y-%m-%d'), 224, total, "HP結算", "總計")
+                            st.session_state.audit_sheet2.append({
+                                "日期": d_str, "對象": "全部對象", "項目": "HP結算(單日加總)",
+                                "明細": "當日所有預收款負數相加之總額", "金額": total
+                            })
 
                 # 5. 工作表3 (嬰兒室)
                 if "工作表3" in all_sheets:
@@ -145,7 +179,11 @@ if template_file and day_file:
                         c = str(row.iloc[2]).strip().split('.')[0].zfill(2)
                         val = safe_num(row.iloc[6])
                         name = code_dict.get(c)
-                        if name in nurs_map: collect_data(dt, nurs_map[name], val, "嬰兒室", name)
+                        if name in nurs_map: 
+                            collect_data(dt, nurs_map[name], val, "嬰兒室", name)
+                            st.session_state.audit_sheet3.append({
+                                "日期": dt.strftime('%Y-%m-%d'), "對象": name, "小計金額": val
+                            })
 
                 # 6 & 7. 欠款與還款
                 for sheet, col_keyword, label, target_col in [("工作表4", "未收額", "今日欠款", 135), ("工作表5", "還款金額", "今日還款", 123)]:
@@ -158,6 +196,9 @@ if template_file and day_file:
                                 dt = pd.to_datetime(row[dt_col], errors='coerce')
                                 if pd.isna(dt): continue
                                 collect_data(dt, target_col, safe_num(row[val_col]), label, "總計")
+                                st.session_state.audit_sheet45.append({
+                                    "類別": label, "日期": dt.strftime('%Y-%m-%d'), "來源金額": safe_num(row[val_col])
+                                })
 
                 # --- 寫入 Excel ---
                 template_file.seek(0)
@@ -182,6 +223,38 @@ if st.session_state.processed_output is not None:
     st.download_button(label="💾 下載結果檔案", data=st.session_state.processed_output, file_name=f"{datetime.now().strftime('%Y%m%d')}_財務對帳版.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
 
     if st.session_state.target_date_str:
+        st.header(f"🔍 獨立對帳面板 (工作表原始數據 - {st.session_state.target_date_str})")
+        tab1, tab2, tab3, tab4 = st.tabs(["工作表1 (門診)", "工作表2 (出院與生產)", "工作表3 (嬰兒室)", "工作表4&5 (欠還款)"])
+        
+        with tab1:
+            df1 = [r for r in st.session_state.audit_sheet1 if r.get('日期') == st.session_state.target_date_str]
+            if df1:
+                st.dataframe(pd.DataFrame(df1), use_container_width=True, hide_index=True)
+            else:
+                st.info(f"當日({st.session_state.target_date_str})無 工作表1 資料")
+
+        with tab2:
+            df2 = [r for r in st.session_state.audit_sheet2 if r.get('日期') == st.session_state.target_date_str]
+            if df2:
+                st.dataframe(pd.DataFrame(df2), use_container_width=True, hide_index=True)
+            else:
+                st.info(f"當日({st.session_state.target_date_str})無 工作表2 資料")
+
+        with tab3:
+            df3 = [r for r in st.session_state.audit_sheet3 if r.get('日期') == st.session_state.target_date_str]
+            if df3:
+                st.dataframe(pd.DataFrame(df3), use_container_width=True, hide_index=True)
+            else:
+                st.info(f"當日({st.session_state.target_date_str})無 工作表3 資料")
+
+        with tab4:
+            df4 = [r for r in st.session_state.audit_sheet45 if r.get('日期') == st.session_state.target_date_str]
+            if df4:
+                st.dataframe(pd.DataFrame(df4), use_container_width=True, hide_index=True)
+            else:
+                st.info(f"當日({st.session_state.target_date_str})無 欠還款 資料")
+                
+        st.divider()
         st.header(f"📊 詳細對帳單 ({st.session_state.target_date_str})")
         day_pool = {k: v for k, v in st.session_state.data_pool.items() if k[0] == st.session_state.target_date_str}
         if day_pool:
@@ -189,7 +262,7 @@ if st.session_state.processed_output is not None:
             for (d, c), (v, r, n) in day_pool.items():
                 col_letter = get_column_letter(c)
                 final_list.append({"醫師/對象": n, "項目名稱": r, "Excel欄位": f"{col_letter} ({c})", "金額": v, "編號": c})
-            display_df = pd.DataFrame(final_list).sort_values(by=['醫師/對象', '編號'])
+            display_df = pd.DataFrame(final_list).sort_values(by=['編號', '醫師/對象'])
             display_df['金額'] = display_df['金額'].apply(lambda x: f"{x:,.0f}")
             st.dataframe(display_df[['醫師/對象', '項目名稱', 'Excel欄位', '金額']], use_container_width=True, hide_index=True)
             st.info("💡 提示：表格已鎖定，您可以放心地點擊下載按鈕。")
