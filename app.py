@@ -118,6 +118,10 @@ if template_file and day_file:
                         })
                         
                         if name == '兒科': collect_data(dt, 70, val, "兒科", "兒科")
+                        elif name == '外賣': collect_data(dt, 124, val, "外賣", "外賣")
+                        elif name == '哺乳諮詢': collect_data(dt, 67, val, "哺乳諮詢", "哺乳諮詢")
+                        elif name == '營養諮詢': collect_data(dt, 68, val, "營養諮詢", "營養諮詢")
+                        elif name == '自然產諮詢': collect_data(dt, 69, val, "自然產諮詢", "自然產諮詢")
                         elif name in opd_no_stu: collect_data(dt, opd_no_stu[name], val, "門診", name)
                         elif name in opd_stu:
                             s = str(row.iloc[2]).strip().upper()
