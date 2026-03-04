@@ -20,7 +20,7 @@ if 'target_date_str' not in st.session_state:
     st.session_state.target_date_str = None
 if 'data_pool' not in st.session_state:
     st.session_state.data_pool = {}
-for key in ['audit_sheet1', 'audit_sheet2', 'audit_sheet3', 'audit_sheet45']:
+for key in ['audit_sheet1', 'audit_sheet2', 'audit_sheet3', 'audit_sheet45', 'hp_details']:
     if getattr(st.session_state, key, None) is None:
         st.session_state[key] = []
 
@@ -71,6 +71,7 @@ if template_file and day_file:
                 st.session_state.audit_sheet2 = []
                 st.session_state.audit_sheet3 = []
                 st.session_state.audit_sheet45 = []
+                st.session_state.hp_details = []
                 
                 def collect_data(date_obj, col, val, reason, name):
                     if val == 0: return
@@ -104,7 +105,8 @@ if template_file and day_file:
                         if pd.isna(dt): continue
                         if st.session_state.target_date_str is None or dt.strftime('%Y-%m-%d') > st.session_state.target_date_str:
                             st.session_state.target_date_str = dt.strftime('%Y-%m-%d')
-                        c = str(row.iloc[1]).strip().split('.')[0].zfill(2)
+                        full_code = str(row.iloc[1]).strip()
+                        c = full_code.split('.')[0].zfill(2)
                         name = code_dict.get(c)
                         val = safe_num(row.iloc[16]) - safe_num(row.iloc[4]) - safe_num(row.iloc[5])
                         
@@ -117,7 +119,8 @@ if template_file and day_file:
                             "門診金額": val
                         })
                         
-                        if name == '兒科': collect_data(dt, 70, val, "兒科", "兒科")
+                        if name == '兒sona': collect_data(dt, 71, val, "兒sona", "兒sona")
+                        elif name == '兒科': collect_data(dt, 70, val, "兒科", "兒科")
                         elif name == '外賣': collect_data(dt, 124, val, "外賣", "外賣")
                         elif name == '哺乳諮詢': collect_data(dt, 67, val, "哺乳諮詢", "哺乳諮詢")
                         elif name == '營養諮詢': collect_data(dt, 68, val, "營養諮詢", "營養諮詢")
@@ -161,9 +164,15 @@ if template_file and day_file:
                             hp_val = abs(iPre) - iAnes - iBirth
                             d_str = dt.strftime('%Y-%m-%d')
                             hp_agg[d_str] = hp_agg.get(d_str, 0.0) + hp_val
+                            patient_name = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else "未知"
                             st.session_state.audit_sheet2.append({
                                 "日期": d_str, "對象": name, "項目": "HP結算(單筆)",
                                 "明細": f"Abs(預收:{iPre}) - 麻醉:{iAnes} - 產費:{iBirth}", "金額": hp_val
+                            })
+                            st.session_state.hp_details.append({
+                                "日期": d_str,
+                                "產婦姓名": patient_name,
+                                "HP結算金額": hp_val
                             })
                     
                     for d_str, total in hp_agg.items():
@@ -272,5 +281,15 @@ if st.session_state.processed_output is not None:
             st.info("💡 提示：表格已鎖定，您可以放心地點擊下載按鈕。")
         else:
             st.warning("當日無異動。")
+            
+        st.divider()
+        st.header(f"🛏️ 住院預收款(HP結算)明細 ({st.session_state.target_date_str})")
+        hp_records = [r for r in st.session_state.hp_details if r.get('日期') == st.session_state.target_date_str]
+        if hp_records:
+            hp_df = pd.DataFrame(hp_records)
+            hp_df['HP結算金額'] = hp_df['HP結算金額'].apply(lambda x: f"{x:,.0f}")
+            st.dataframe(hp_df[['產婦姓名', 'HP結算金額']], use_container_width=True, hide_index=True)
+        else:
+            st.info("當日無住院預收款結算資料。")
 elif uploaded_files and (template_file is None or day_file is None):
     st.warning("請確保同時上傳了「115年度明細表」與「每日來源資料 (day.xlsx)」兩個檔案。")
