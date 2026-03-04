@@ -110,14 +110,21 @@ if template_file and day_file:
                         name = code_dict.get(c)
                         val = safe_num(row.iloc[16]) - safe_num(row.iloc[4]) - safe_num(row.iloc[5])
                         
+                        reg_fee = safe_num(row.iloc[4])
+                        copay_fee = safe_num(row.iloc[5])
+                        
                         st.session_state.audit_sheet1.append({
                             "日期": dt.strftime('%Y-%m-%d'),
                             "對象": name if name else "未知",
                             "小計": safe_num(row.iloc[16]),
-                            "掛號": safe_num(row.iloc[4]),
-                            "部分負擔": safe_num(row.iloc[5]),
+                            "掛號": reg_fee,
+                            "部分負擔": copay_fee,
                             "門診金額": val
                         })
+                        
+                        # 將掛號費與部分負擔累加，分別寫入 AE(31) 與 AF(32) 欄
+                        collect_data(dt, 31, reg_fee, "掛號費", "門診總計")
+                        collect_data(dt, 32, copay_fee, "部分負擔", "門診總計")
                         
                         if name == '兒sona': collect_data(dt, 71, val, "兒sona", "兒sona")
                         elif name == '兒科': collect_data(dt, 70, val, "兒科", "兒科")
