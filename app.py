@@ -300,3 +300,14 @@ if st.session_state.processed_output is not None:
             st.info("當日無住院預收款結算資料。")
 elif uploaded_files and (template_file is None or day_file is None):
     st.warning("請確保同時上傳了「115年度明細表」與「每日來源資料 (day.xlsx)」兩個檔案。")
+
+# --- 更新日誌 ---
+st.divider()
+with st.expander("更新日誌 (最後更新: 2026-04-15)"):
+    st.markdown("""
+- **2026-04-15** — 修正 病房費/材料費/伙食費/嬰兒室 欄位編號對齊 Excel 模板；自然產諮詢改為助產諮詢(代碼95)
+- **2026-04-14** — 修正 生產實收 欄位編號 (birth_map) 對齊 Excel 模板
+- **2026-04-09** — 新增兒sona判斷與HP結算網頁明細表
+- **2026-04-08** — 支援外賣、哺乳諮詢、營養諮詢與助產諮詢項目加總
+- **2026-04-07** — 門診掛號與部分負擔加總至AE與AF欄
+""")
