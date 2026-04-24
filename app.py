@@ -141,14 +141,20 @@ if template_file and day_file:
 
                 # 4. 工作表2 (出院與生產實收)
                 if "工作表2" in all_sheets:
-                    df2 = pd.read_excel(day_file, sheet_name="工作表2", header=None, skiprows=1)
+                    df2 = pd.read_excel(day_file, sheet_name="工作表2")
+                    col2 = {c: next((n for n in df2.columns if k in str(n)), None) for c, k in [('dt','住院日期'),('stu','診次'),('doc','醫生代碼'),('name','姓名'),('sub','小計'),('anes','麻醉'),('room','病房'),('birth','產費'),('mat','材料'),('pre','預收'),('food','伙食')]}
                     hp_agg = {}
                     for _, row in df2.iterrows():
-                        dt = pd.to_datetime(row.iloc[0], errors='coerce')
+                        dt = pd.to_datetime(row[col2['dt']], errors='coerce') if col2['dt'] else pd.NaT
                         if pd.isna(dt): continue
-                        c = str(row.iloc[2]).strip().split('.')[0].zfill(2)
+                        c = str(row[col2['doc']]).strip().split('.')[0].zfill(2) if col2['doc'] else ""
                         name = code_dict.get(c, "其他")
-                        iAnes, iRoom, iBirth, iMat, iPre, iFood = safe_num(row.iloc[7]), safe_num(row.iloc[8]), safe_num(row.iloc[9]), safe_num(row.iloc[10]), safe_num(row.iloc[11]), safe_num(row.iloc[12])
+                        iAnes = safe_num(row[col2['anes']]) if col2['anes'] else 0.0
+                        iRoom = safe_num(row[col2['room']]) if col2['room'] else 0.0
+                        iBirth = safe_num(row[col2['birth']]) if col2['birth'] else 0.0
+                        iMat = safe_num(row[col2['mat']]) if col2['mat'] else 0.0
+                        iPre = safe_num(row[col2['pre']]) if col2['pre'] else 0.0
+                        iFood = safe_num(row[col2['food']]) if col2['food'] else 0.0
                         
                         if name in room_map:
                             collect_data(dt, room_map[name], iRoom, "病房費", name)
@@ -171,7 +177,7 @@ if template_file and day_file:
                             hp_val = abs(iPre) - iAnes - iBirth
                             d_str = dt.strftime('%Y-%m-%d')
                             hp_agg[d_str] = hp_agg.get(d_str, 0.0) + hp_val
-                            patient_name = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else "未知"
+                            patient_name = str(row[col2['name']]).strip() if col2['name'] and pd.notna(row[col2['name']]) else "未知"
                             st.session_state.audit_sheet2.append({
                                 "日期": d_str, "對象": name, "項目": "HP結算(單筆)",
                                 "明細": f"Abs(預收:{iPre}) - 麻醉:{iAnes} - 產費:{iBirth}", "金額": hp_val
