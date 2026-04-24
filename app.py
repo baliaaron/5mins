@@ -303,8 +303,9 @@ elif uploaded_files and (template_file is None or day_file is None):
 
 # --- 更新日誌 ---
 st.divider()
-with st.expander("更新日誌 (最後更新: 2026-04-15)"):
+with st.expander("更新日誌 (最後更新: 2026-04-24)"):
     st.markdown("""
+- **2026-04-24** — 修正 生產實收 (birth_map) 欄位編號對齊 11504 模板，補上張明揚
 - **2026-04-15** — 修正 病房費/材料費/伙食費/嬰兒室 欄位編號對齊 Excel 模板；自然產諮詢改為助產諮詢(代碼95)
 - **2026-04-14** — 修正 生產實收 欄位編號 (birth_map) 對齊 Excel 模板
 - **2026-04-09** — 新增兒sona判斷與HP結算網頁明細表
