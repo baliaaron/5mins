@@ -165,22 +165,21 @@ if template_file and day_file:
                                 "明細": f"病房:{iRoom}, 材料:{iMat}, 伙食:{iFood}", "金額": iRoom + iMat + iFood
                             })
                         
-                        if iPre >= 0:
-                            birth_total = iAnes + iBirth + iPre
-                            if birth_total != 0 and name in birth_map:
-                                collect_data(dt, birth_map[name], birth_total, "生產實收(麻+產+預)", name)
-                                st.session_state.audit_sheet2.append({
-                                    "日期": dt.strftime('%Y-%m-%d'), "對象": name, "項目": "生產實收",
-                                    "明細": f"麻醉:{iAnes}, 產費:{iBirth}, 預收:{iPre}", "金額": birth_total
-                                })
-                        else:
-                            hp_val = abs(iPre) - iAnes - iBirth
+                        birth_total = iAnes + iBirth + iPre
+                        if birth_total > 0 and name in birth_map:
+                            collect_data(dt, birth_map[name], birth_total, "生產實收(麻+產+預)", name)
+                            st.session_state.audit_sheet2.append({
+                                "日期": dt.strftime('%Y-%m-%d'), "對象": name, "項目": "生產實收",
+                                "明細": f"麻醉:{iAnes}, 產費:{iBirth}, 預收:{iPre}", "金額": birth_total
+                            })
+                        elif birth_total < 0:
+                            hp_val = abs(birth_total)
                             d_str = dt.strftime('%Y-%m-%d')
                             hp_agg[d_str] = hp_agg.get(d_str, 0.0) + hp_val
                             patient_name = str(row[col2['name']]).strip() if col2['name'] and pd.notna(row[col2['name']]) else "未知"
                             st.session_state.audit_sheet2.append({
                                 "日期": d_str, "對象": name, "項目": "HP結算(單筆)",
-                                "明細": f"Abs(預收:{iPre}) - 麻醉:{iAnes} - 產費:{iBirth}", "金額": hp_val
+                                "明細": f"麻醉:{iAnes} + 產費:{iBirth} + 預收:{iPre} = {birth_total}", "金額": hp_val
                             })
                             st.session_state.hp_details.append({
                                 "日期": d_str,
@@ -309,8 +308,9 @@ elif uploaded_files and (template_file is None or day_file is None):
 
 # --- 更新日誌 ---
 st.divider()
-with st.expander("更新日誌 (最後更新: 2026-08-05)"):
+with st.expander("更新日誌 (最後更新: 2026-08-07)"):
     st.markdown("""
+- **2026-08-07** — 修正生產實收/HP結算分流邏輯：改以「麻醉+產費+預收」合計正負判斷，正數填生產實收、負數取絕對值填HP結算。修正前以「預收款正負」判斷，導致預收款為小額負數時（如-5000）錯誤走HP路徑產生負數
 - **2026-08-05** — 新增醫師周芷瑜(904, OPD早午晚=BL/BM/BN)；全部座標對齊 11508 新版面（掛號AH/部負AI，OPD鄭以後整體+6）
 - **2026-04-24** — 修正 生產實收欄位對齊 11504 模板；工作表2改用欄位名稱讀取，修正伙食費與預收款順序錯位問題
 - **2026-04-15** — 修正 病房費/材料費/伙食費/嬰兒室 欄位編號對齊 Excel 模板；自然產諮詢改為助產諮詢(代碼95)
