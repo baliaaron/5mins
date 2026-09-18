@@ -248,40 +248,48 @@ if st.session_state.processed_output is not None:
     st.download_button(label="💾 下載結果檔案", data=st.session_state.processed_output, file_name=f"{datetime.now().strftime('%Y%m%d')}_財務對帳版.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")
 
     if st.session_state.target_date_str:
-        st.header(f"🔍 獨立對帳面板 (工作表原始數據 - {st.session_state.target_date_str})")
+        all_dates = sorted(
+            {k[0] for k in st.session_state.data_pool}
+            | {r['日期'] for r in st.session_state.audit_sheet1 + st.session_state.audit_sheet2 + st.session_state.audit_sheet3 + st.session_state.audit_sheet45 + st.session_state.hp_details if r.get('日期')}
+        )
+        if len(all_dates) > 1:
+            st.info(f"📅 來源檔含 {len(all_dates)} 天資料 ({all_dates[0]} ~ {all_dates[-1]})，Excel 已全部寫入；下方明細請選擇日期查看。")
+        sel_date = st.selectbox("📅 選擇對帳日期", all_dates, index=len(all_dates) - 1)
+
+        st.header(f"🔍 獨立對帳面板 (工作表原始數據 - {sel_date})")
         tab1, tab2, tab3, tab4 = st.tabs(["工作表1 (門診)", "工作表2 (出院與生產)", "工作表3 (嬰兒室)", "工作表4&5 (欠還款)"])
         
         with tab1:
-            df1 = [r for r in st.session_state.audit_sheet1 if r.get('日期') == st.session_state.target_date_str]
+            df1 = [r for r in st.session_state.audit_sheet1 if r.get('日期') == sel_date]
             if df1:
                 st.dataframe(pd.DataFrame(df1), use_container_width=True, hide_index=True)
             else:
-                st.info(f"當日({st.session_state.target_date_str})無 工作表1 資料")
+                st.info(f"當日({sel_date})無 工作表1 資料")
 
         with tab2:
-            df2 = [r for r in st.session_state.audit_sheet2 if r.get('日期') == st.session_state.target_date_str]
+            df2 = [r for r in st.session_state.audit_sheet2 if r.get('日期') == sel_date]
             if df2:
                 st.dataframe(pd.DataFrame(df2), use_container_width=True, hide_index=True)
             else:
-                st.info(f"當日({st.session_state.target_date_str})無 工作表2 資料")
+                st.info(f"當日({sel_date})無 工作表2 資料")
 
         with tab3:
-            df3 = [r for r in st.session_state.audit_sheet3 if r.get('日期') == st.session_state.target_date_str]
+            df3 = [r for r in st.session_state.audit_sheet3 if r.get('日期') == sel_date]
             if df3:
                 st.dataframe(pd.DataFrame(df3), use_container_width=True, hide_index=True)
             else:
-                st.info(f"當日({st.session_state.target_date_str})無 工作表3 資料")
+                st.info(f"當日({sel_date})無 工作表3 資料")
 
         with tab4:
-            df4 = [r for r in st.session_state.audit_sheet45 if r.get('日期') == st.session_state.target_date_str]
+            df4 = [r for r in st.session_state.audit_sheet45 if r.get('日期') == sel_date]
             if df4:
                 st.dataframe(pd.DataFrame(df4), use_container_width=True, hide_index=True)
             else:
-                st.info(f"當日({st.session_state.target_date_str})無 欠還款 資料")
+                st.info(f"當日({sel_date})無 欠還款 資料")
                 
         st.divider()
-        st.header(f"📊 詳細對帳單 ({st.session_state.target_date_str})")
-        day_pool = {k: v for k, v in st.session_state.data_pool.items() if k[0] == st.session_state.target_date_str}
+        st.header(f"📊 詳細對帳單 ({sel_date})")
+        day_pool = {k: v for k, v in st.session_state.data_pool.items() if k[0] == sel_date}
         if day_pool:
             final_list = []
             for (d, c), (v, r, n) in day_pool.items():
@@ -295,8 +303,8 @@ if st.session_state.processed_output is not None:
             st.warning("當日無異動。")
             
         st.divider()
-        st.header(f"🛏️ 住院預收款(HP結算)明細 ({st.session_state.target_date_str})")
-        hp_records = [r for r in st.session_state.hp_details if r.get('日期') == st.session_state.target_date_str]
+        st.header(f"🛏️ 住院預收款(HP結算)明細 ({sel_date})")
+        hp_records = [r for r in st.session_state.hp_details if r.get('日期') == sel_date]
         if hp_records:
             hp_df = pd.DataFrame(hp_records)
             hp_df['HP結算金額'] = hp_df['HP結算金額'].apply(lambda x: f"{x:,.0f}")
@@ -308,8 +316,9 @@ elif uploaded_files and (template_file is None or day_file is None):
 
 # --- 更新日誌 ---
 st.divider()
-with st.expander("更新日誌 (最後更新: 2026-09-04)"):
+with st.expander("更新日誌 (最後更新: 2026-09-18)"):
     st.markdown("""
+- **2026-09-18** — 修正批次多天上傳時網頁明細只顯示一天：新增「選擇對帳日期」下拉，原始數據/詳細對帳單/HP明細三區跟著切換（Excel 寫入原本就已含全部日期）
 - **2026-09-04** — 人數區加入蔡明翰（早/午/晚各+1欄），掛號以後全部座標再+3（掛號AK(37)/部負AL(38)，HP結算ID(238)）
 - **2026-09-01** — 新增醫師蔡明翰(905, OPD早午晚=BO/BP/BQ)；全部座標對齊 11509 新版面（OPD鄭以後+3、薪資區插蔡明翰兩欄再+2，預收款HP結算移至IA(235)）
 - **2026-08-07** — 修正生產實收/HP結算分流邏輯：改以「麻醉+產費+預收」合計正負判斷，正數填生產實收、負數取絕對值填HP結算。修正前以「預收款正負」判斷，導致預收款為小額負數時（如-5000）錯誤走HP路徑產生負數
