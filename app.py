@@ -83,12 +83,12 @@ if template_file and day_file:
                         "日期": d_str, "醫師/對象": name, "欄位編號": col, "項目內容": reason, "金額": val
                     })
 
-                # 座標地圖 (11509 起新版面 v2：人數區加蔡明翰 → 掛號以後全部再 +3，HP結算 ID(238))
-                opd_stu = {'李':(46,47,48),'珩':(49,50,51),'芳':(52,53,54),'東':(55,56,57),'澍':(58,59,60),'張明揚':(61,62,63),'李建南':(64,65,66),'周芷瑜':(67,68,69),'蔡明翰':(70,71,72),'影像':(76,77,78)}
-                opd_no_stu = {'鄭':73, '許越涵':74, '陳思宇':75}
-                birth_map = {'李':88,'珩':89,'芳':90,'東':91,'澍':92,'李建南':93,'張明揚':94,'林慧雯':95,'陳思宇':96}
-                room_map = {'李':97,'珩':98,'芳':99,'東':100,'澍':101,'李建南':102,'張明揚':103,'鄭':104,'陳思宇':105,'林慧雯':106}
-                nurs_map = {'李':127,'珩':128,'芳':129,'東':130,'澍':131,'李建南':132,'張明揚':133,'林慧雯':134}
+                # 座標地圖 (11510 起新版面：刪東門診(人數-3、OPD-3) → 掛號以後 -3、OPD澍以後 -6，HP結算 HP(224)；東門診略過不寫)
+                opd_stu = {'李':(43,44,45),'珩':(46,47,48),'芳':(49,50,51),'澍':(52,53,54),'張明揚':(55,56,57),'李建南':(58,59,60),'周芷瑜':(61,62,63),'蔡明翰':(64,65,66),'影像':(70,71,72)}
+                opd_no_stu = {'鄭':67, '許越涵':68, '陳思宇':69}
+                birth_map = {'李':82,'珩':83,'芳':84,'東':85,'澍':86,'李建南':87,'張明揚':88,'林慧雯':89,'陳思宇':90}
+                room_map = {'李':91,'珩':92,'芳':93,'東':94,'澍':95,'李建南':96,'張明揚':97,'鄭':98,'陳思宇':99,'林慧雯':100}
+                nurs_map = {'李':121,'珩':122,'芳':123,'東':124,'澍':125,'李建南':126,'張明揚':127,'林慧雯':128}
 
                 def safe_num(v):
                     try: return float(v) if pd.notna(v) else 0.0
@@ -122,16 +122,16 @@ if template_file and day_file:
                             "門診金額": val
                         })
                         
-                        # 將掛號費與部分負擔累加，分別寫入 AK(37) 與 AL(38) 欄
-                        collect_data(dt, 37, reg_fee, "掛號費", "門診總計")
-                        collect_data(dt, 38, copay_fee, "部分負擔", "門診總計")
+                        # 將掛號費與部分負擔累加，分別寫入 AH(34) 與 AI(35) 欄
+                        collect_data(dt, 34, reg_fee, "掛號費", "門診總計")
+                        collect_data(dt, 35, copay_fee, "部分負擔", "門診總計")
 
-                        if name == '兒sona': collect_data(dt, 83, val, "兒sona", "兒sona")
-                        elif name == '兒科': collect_data(dt, 82, val, "兒科", "兒科")
-                        elif name == '外賣': collect_data(dt, 136, val, "外賣", "外賣")
-                        elif name == '哺乳諮詢': collect_data(dt, 79, val, "哺乳諮詢", "哺乳諮詢")
-                        elif name == '營養諮詢': collect_data(dt, 80, val, "營養諮詢", "營養諮詢")
-                        elif name == '助產諮詢': collect_data(dt, 81, val, "助產諮詢", "助產諮詢")
+                        if name == '兒sona': collect_data(dt, 77, val, "兒sona", "兒sona")
+                        elif name == '兒科': collect_data(dt, 76, val, "兒科", "兒科")
+                        elif name == '外賣': collect_data(dt, 130, val, "外賣", "外賣")
+                        elif name == '哺乳諮詢': collect_data(dt, 73, val, "哺乳諮詢", "哺乳諮詢")
+                        elif name == '營養諮詢': collect_data(dt, 74, val, "營養諮詢", "營養諮詢")
+                        elif name == '助產諮詢': collect_data(dt, 75, val, "助產諮詢", "助產諮詢")
                         elif name in opd_no_stu: collect_data(dt, opd_no_stu[name], val, "門診", name)
                         elif name in opd_stu:
                             s = str(row.iloc[2]).strip().upper()
@@ -189,7 +189,7 @@ if template_file and day_file:
                     
                     for d_str, total in hp_agg.items():
                         if total != 0:
-                            collect_data(datetime.strptime(d_str, '%Y-%m-%d'), 238, total, "HP結算", "總計")
+                            collect_data(datetime.strptime(d_str, '%Y-%m-%d'), 224, total, "HP結算", "總計")
                             st.session_state.audit_sheet2.append({
                                 "日期": d_str, "對象": "全部對象", "項目": "HP結算(單日加總)",
                                 "明細": "當日所有預收款負數相加之總額", "金額": total
@@ -211,7 +211,7 @@ if template_file and day_file:
                             })
 
                 # 6 & 7. 欠款與還款
-                for sheet, col_keyword, label, target_col in [("工作表4", "未收額", "今日欠款", 147), ("工作表5", "還款金額", "今日還款", 135)]:
+                for sheet, col_keyword, label, target_col in [("工作表4", "未收額", "今日欠款", 141), ("工作表5", "還款金額", "今日還款", 129)]:
                     if sheet in all_sheets:
                         tmp = pd.read_excel(day_file, sheet_name=sheet)
                         dt_col = next((c for c in tmp.columns if '日期' in str(c)), tmp.columns[0])
@@ -231,7 +231,8 @@ if template_file and day_file:
                 for (d_str, col), (val, reason, name) in st.session_state.data_pool.items():
                     dt = datetime.strptime(d_str, '%Y-%m-%d')
                     m_key = f"115{dt.month:02d}"
-                    if m_key in wb.sheetnames: wb[m_key].cell(row=dt.day + 3, column=col).value = val
+                    ws_name = next((n for n in wb.sheetnames if n.strip() == m_key), None)
+                    if ws_name: wb[ws_name].cell(row=dt.day + 3, column=col).value = val
 
                 out = io.BytesIO()
                 wb.save(out)
@@ -316,8 +317,9 @@ elif uploaded_files and (template_file is None or day_file is None):
 
 # --- 更新日誌 ---
 st.divider()
-with st.expander("更新日誌 (最後更新: 2026-09-18)"):
+with st.expander("更新日誌 (最後更新: 2026-10-01)"):
     st.markdown("""
+- **2026-10-01** — 對齊 11510 新版面：刪除東門診（人數早/午/晚、OPD早/午/晚），東的門診資料略過不寫（住院/生產/嬰兒室保留）；掛號以後 -3、OPD澍以後 -6（掛號AH(34)/部負AI(35)、還款DY(129)、欠款EK(141)），HP結算移至HP(224)；工作表名稱容忍前後空白
 - **2026-09-18** — 修正批次多天上傳時網頁明細只顯示一天：新增「選擇對帳日期」下拉，原始數據/詳細對帳單/HP明細三區跟著切換（Excel 寫入原本就已含全部日期）
 - **2026-09-04** — 人數區加入蔡明翰（早/午/晚各+1欄），掛號以後全部座標再+3（掛號AK(37)/部負AL(38)，HP結算ID(238)）
 - **2026-09-01** — 新增醫師蔡明翰(905, OPD早午晚=BO/BP/BQ)；全部座標對齊 11509 新版面（OPD鄭以後+3、薪資區插蔡明翰兩欄再+2，預收款HP結算移至IA(235)）
