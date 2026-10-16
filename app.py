@@ -128,7 +128,7 @@ if template_file and day_file:
 
                         if name == '兒sona': collect_data(dt, 77, val, "兒sona", "兒sona")
                         elif name == '兒科': collect_data(dt, 76, val, "兒科", "兒科")
-                        elif name == '外賣': collect_data(dt, 130, val, "外賣", "外賣")
+                        elif name == '外賣': collect_data(dt, 131, val, "外賣", "外賣")
                         elif name == '哺乳諮詢': collect_data(dt, 73, val, "哺乳諮詢", "哺乳諮詢")
                         elif name == '營養諮詢': collect_data(dt, 74, val, "營養諮詢", "營養諮詢")
                         elif name == '助產諮詢': collect_data(dt, 75, val, "助產諮詢", "助產諮詢")
@@ -319,7 +319,7 @@ elif uploaded_files and (template_file is None or day_file is None):
 st.divider()
 with st.expander("更新日誌 (最後更新: 2026-10-15)"):
     st.markdown("""
-- **2026-10-15** — 對齊 11510 v2：蔡明翰加入住院（生產CJ(88)插入，CJ以後全部+1；病房/材料/伙食 鄭→蔡明翰，鄭不記；嬰兒室 揚→蔡明翰，揚不記），還款DZ(130)、欠款EL(142)、HP結算HQ(225)
+- **2026-10-15** — 對齊 11510 v2：蔡明翰加入住院（生產CJ(88)插入，CJ以後全部+1；病房/材料/伙食 鄭→蔡明翰，鄭不記；嬰兒室 揚→蔡明翰，揚不記），還款DZ(130)、外賣EA(131)、欠款EL(142)、HP結算HQ(225)
 - **2026-10-01** — 對齊 11510 新版面：刪除東門診（人數早/午/晚、OPD早/午/晚），東的門診資料略過不寫（住院/生產/嬰兒室保留）；掛號以後 -3、OPD澍以後 -6（掛號AH(34)/部負AI(35)、還款DY(129)、欠款EK(141)），HP結算移至HP(224)；工作表名稱容忍前後空白
 - **2026-09-18** — 修正批次多天上傳時網頁明細只顯示一天：新增「選擇對帳日期」下拉，原始數據/詳細對帳單/HP明細三區跟著切換（Excel 寫入原本就已含全部日期）
 - **2026-09-04** — 人數區加入蔡明翰（早/午/晚各+1欄），掛號以後全部座標再+3（掛號AK(37)/部負AL(38)，HP結算ID(238)）
